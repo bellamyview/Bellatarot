@@ -480,7 +480,7 @@
   .aspect-btn:hover{ border-color: var(--gold); color: var(--gold-bright); transform: translateY(-4px); }
 
   .draw-btn{
-    margin-top: 30px; cursor:pointer;
+    margin-top: 22px; cursor:pointer;
     width:130px; height:130px; border-radius:50%;
     background: radial-gradient(circle at 50% 35%, var(--purple-2), var(--bg-panel) 75%);
     border:1px solid var(--gold);
@@ -501,6 +501,25 @@
     background: rgba(160,60,60,.08); color: var(--ink-dim); font-size:.86rem; line-height:1.9; font-weight:300;
   }
   .restricted-notice strong{ color:#e08a8a; display:block; margin-bottom:6px; font-family:var(--serif); font-size:.98rem; }
+
+  /* ---------- card sphere（抽卡牌陣球特效） ---------- */
+  .card-sphere-stage{
+    margin-top: 26px; display:flex; flex-direction:column; align-items:center; gap:10px;
+  }
+  .card-sphere{
+    position:relative; width:280px; height:280px; max-width:78vw; max-height:78vw;
+    perspective: 900px; cursor:grab; touch-action:none;
+  }
+  .card-sphere.dragging{ cursor:grabbing; }
+  .card-sphere .sphere-card{
+    position:absolute; left:50%; top:50%; width:40px; height:62px;
+    border-radius:5px; overflow:hidden; pointer-events:none; will-change:transform,opacity;
+    box-shadow: 0 6px 16px -6px rgba(0,0,0,.65), 0 0 0 1px rgba(205,168,78,.3);
+  }
+  .card-sphere .sphere-card img{ width:100%; height:100%; object-fit:cover; display:block; }
+  .card-sphere-hint{
+    font-size:.76rem; color: var(--ink-faint); letter-spacing:.04em; font-weight:300;
+  }
 
   .result-wrap{ display:grid; grid-template-columns: 230px 1fr; }
   .result-media{
@@ -977,6 +996,7 @@
     document.body.style.overflow = 'hidden';
   }
   function closeDivination(){
+    stopCardSphere();
     divOverlay.classList.remove('open');
     document.body.style.overflow = '';
   }
@@ -984,7 +1004,128 @@
   divOverlay.addEventListener('click', function(e){ if(e.target===divOverlay) closeDivination(); });
   document.addEventListener('keydown', function(e){ if(e.key==='Escape' && divOverlay.classList.contains('open')) closeDivination(); });
 
+  // ---------------- 3D 牌陣球（抽卡特效） ----------------
+  var sphereCtl = null;
+
+  function fibonacciSpherePoints(count, radius){
+    var pts = [];
+    if(count <= 0) return pts;
+    var offset = 2 / count;
+    var increment = Math.PI * (3 - Math.sqrt(5));
+    for (var i = 0; i < count; i++){
+      var y = ((i * offset) - 1) + (offset / 2);
+      var r = Math.sqrt(Math.max(0, 1 - y * y));
+      var phi = i * increment;
+      pts.push({ x: Math.cos(phi) * r * radius, y: y * radius, z: Math.sin(phi) * r * radius });
+    }
+    return pts;
+  }
+
+  function stopCardSphere(){
+    if(sphereCtl){ sphereCtl.stop(); sphereCtl = null; }
+  }
+
+  function startCardSphere(container){
+    stopCardSphere();
+    if(!CARDS.length) return;
+
+    var radius = 118;
+    var points = fibonacciSpherePoints(CARDS.length, radius);
+    var rot = { x: 16, y: 0 };
+    var vel = { x: 0, y: 0.18 };
+    var dragging = false;
+    var last = { x: 0, y: 0 };
+    var nodes = [];
+
+    var frag = document.createDocumentFragment();
+    CARDS.forEach(function(c, i){
+      var el = document.createElement('div');
+      el.className = 'sphere-card';
+      var img = document.createElement('img');
+      img.src = 'images/' + c.image;
+      img.alt = c.name || '';
+      img.draggable = false;
+      img.loading = i < 16 ? 'eager' : 'lazy';
+      el.appendChild(img);
+      frag.appendChild(el);
+      nodes.push(el);
+    });
+    container.innerHTML = '';
+    container.appendChild(frag);
+
+    function render(){
+      var rx = rot.x * Math.PI / 180, ry = rot.y * Math.PI / 180;
+      for (var i = 0; i < nodes.length; i++){
+        var p = points[i];
+        var x1 = p.x * Math.cos(ry) + p.z * Math.sin(ry);
+        var z1 = -p.x * Math.sin(ry) + p.z * Math.cos(ry);
+        var y1 = p.y * Math.cos(rx) - z1 * Math.sin(rx);
+        var z2 = p.y * Math.sin(rx) + z1 * Math.cos(rx);
+        var depth = (z2 + radius) / (2 * radius);
+        var scale = 0.5 + depth * 0.75;
+        var opacity = Math.max(0.18, Math.min(1, 0.25 + depth * 0.9));
+        nodes[i].style.transform = 'translate(-50%,-50%) translate3d(' + x1.toFixed(1) + 'px,' + y1.toFixed(1) + 'px,0) scale(' + scale.toFixed(3) + ')';
+        nodes[i].style.zIndex = Math.round(1000 + z2);
+        nodes[i].style.opacity = opacity.toFixed(2);
+      }
+    }
+
+    function loop(){
+      if(!dragging){
+        rot.y += vel.y;
+        rot.x += vel.x;
+        vel.x *= 0.94;
+        vel.y += (0.18 - vel.y) * 0.02;
+      }
+      render();
+      raf = requestAnimationFrame(loop);
+    }
+    var raf = requestAnimationFrame(loop);
+
+    function pointFromEvent(e){
+      return (e.touches && e.touches.length) ? e.touches[0] : e;
+    }
+    function onDown(e){
+      dragging = true;
+      var pt = pointFromEvent(e);
+      last = { x: pt.clientX, y: pt.clientY };
+      container.classList.add('dragging');
+    }
+    function onMove(e){
+      if(!dragging) return;
+      var pt = pointFromEvent(e);
+      var dx = pt.clientX - last.x, dy = pt.clientY - last.y;
+      rot.y += dx * 0.4;
+      rot.x = Math.max(-70, Math.min(70, rot.x - dy * 0.4));
+      vel = { x: -dy * 0.4, y: dx * 0.4 };
+      last = { x: pt.clientX, y: pt.clientY };
+      if(e.cancelable) e.preventDefault();
+    }
+    function onUp(){
+      dragging = false;
+      container.classList.remove('dragging');
+    }
+
+    container.addEventListener('mousedown', onDown);
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+    container.addEventListener('touchstart', onDown, { passive: true });
+    document.addEventListener('touchmove', onMove, { passive: false });
+    document.addEventListener('touchend', onUp);
+
+    sphereCtl = {
+      stop: function(){
+        cancelAnimationFrame(raf);
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+        document.removeEventListener('touchmove', onMove);
+        document.removeEventListener('touchend', onUp);
+      }
+    };
+  }
+
   function renderDivStep1(){
+    stopCardSphere();
     divBody.innerHTML = '' +
       '<div class="div-step">' +
         '<div class="step-eyebrow">STEP 1</div>' +
@@ -1007,19 +1148,25 @@
   }
 
   function renderDivStep2(){
+    stopCardSphere();
     var restricted = getRestrictedWindow();
     var html = '' +
       '<div class="div-step">' +
         '<div class="step-eyebrow">STEP 2</div>' +
         '<h3>在心中默念你的問題</h3>' +
         '<span class="chosen-tag">面向：'+aspectLabelOf(divState.aspect)+'</span>' +
-        '<p class="hint">準備好了嗎？靜下心，把問題在心裡再默念一次，然後抽出這一刻屬於你的牌。</p>';
+        '<p class="hint">準備好了嗎？靜下心，把問題在心裡再默念一次，凝視飄浮的牌陣，感受此刻與你共鳴的能量。</p>';
     if(restricted){
       html += '<div class="restricted-notice"><strong>此時段磁場不穩定</strong>' +
         '目前正值 '+restricted+' 之間，建議避開這段時間占卜。請稍後再回來，讓心緒與時機都準備好再問。</div>' +
         '<div class="div-actions"><button class="btn-ghost" id="divBackBtn">重新選擇面向</button></div>';
     } else {
-      html += '<button class="draw-btn" id="drawBtn">抽一張牌</button>';
+      html += '' +
+        '<div class="card-sphere-stage">' +
+          '<div class="card-sphere" id="cardSphere"></div>' +
+          '<div class="card-sphere-hint">拖曳可轉動牌陣 · 準備好了就按下方抽牌</div>' +
+        '</div>' +
+        '<button class="draw-btn" id="drawBtn">抽一張牌</button>';
       if(divState.prevDays < 7){
         html += '<div class="reminder-warn">你在 '+Math.floor(divState.prevDays)+' 天前才問過「'+aspectLabelOf(divState.aspect)+'」的問題，同一個問題建議間隔至少一週再問，這次的結果僅供參考。</div>';
       }
@@ -1030,17 +1177,21 @@
     document.getElementById('divBackBtn').addEventListener('click', renderDivStep1);
     var drawBtn = document.getElementById('drawBtn');
     if(drawBtn){ drawBtn.addEventListener('click', performDraw); }
+    var sphereEl = document.getElementById('cardSphere');
+    if(sphereEl){ startCardSphere(sphereEl); }
   }
 
   function performDraw(){
     // 抽牌前再檢查一次時段，避免使用者停留跨過了限制時段
     if(getRestrictedWindow()){ renderDivStep2(); return; }
+    stopCardSphere();
     divState.draw = drawRandomCard();
     setLastDrawTs(divState.aspect);
     renderDivStep3();
   }
 
   function renderDivStep3(){
+    stopCardSphere();
     var card = divState.draw.card;
     var reversed = divState.draw.reversed;
     var polarity = reversed ? 'reversed' : 'upright';
