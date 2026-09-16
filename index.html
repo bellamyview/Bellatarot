@@ -369,9 +369,198 @@
   }
 
   .hidden{ display:none !important; }
+
+  /* ---------- online presence bar ---------- */
+  .online-bar{
+    position:relative; z-index:2;
+    display:flex; align-items:center; justify-content:center; gap:9px;
+    padding: 9px 16px;
+    background: rgba(10,5,18,.6);
+    border-bottom: 1px solid var(--line);
+    font-family: var(--sans); font-size:.78rem; color: var(--ink-dim);
+    letter-spacing:.03em;
+  }
+  .pulse-dot{
+    width:7px; height:7px; border-radius:50%; background:#8ee0a8; flex-shrink:0;
+    box-shadow: 0 0 0 0 rgba(142,224,168,.6);
+    animation: pulseDot 2.2s ease-out infinite;
+  }
+  @keyframes pulseDot{
+    0%{ box-shadow: 0 0 0 0 rgba(142,224,168,.55); }
+    70%{ box-shadow: 0 0 0 7px rgba(142,224,168,0); }
+    100%{ box-shadow: 0 0 0 0 rgba(142,224,168,0); }
+  }
+  .online-bar strong{ color: var(--gold-bright); font-weight:600; }
+
+  /* ---------- divination CTA (home banner) ---------- */
+  .div-cta{
+    position:relative;
+    display:flex; align-items:center; justify-content:space-between; gap:28px;
+    margin: 4px 0 46px;
+    padding: 30px 36px;
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+  }
+  .div-cta::before, .div-cta::after{
+    content:""; position:absolute; left:50%; transform:translateX(-50%);
+    width:34px; height:1px; background: var(--gold-dim);
+  }
+  .div-cta::before{ top:-1px; } .div-cta::after{ bottom:-1px; }
+  .div-cta-text{ text-align:left; }
+  .div-cta-text .eyebrow{
+    font-family: var(--display); font-size:.66rem; letter-spacing:.32em; color: var(--gold-dim);
+  }
+  .div-cta-text h2{
+    font-family: var(--serif); font-size: clamp(1.3rem, 2.6vw, 1.7rem); font-weight:700;
+    margin-top:8px; color: var(--ink);
+  }
+  .div-cta-text p{
+    margin-top:8px; font-size:.86rem; color: var(--ink-dim); font-weight:300; max-width:420px; line-height:1.85;
+  }
+  .div-cta-btn{
+    margin-top:16px; display:inline-block; cursor:pointer;
+    background:none; border:1px solid var(--gold); color: var(--gold-bright);
+    font-family: var(--serif); font-size:.92rem; letter-spacing:.05em;
+    padding: 10px 26px; border-radius:2px;
+    transition: background .25s ease, color .25s ease, box-shadow .25s ease;
+  }
+  .div-cta-btn:hover{ background: var(--gold); color: #1a0f2e; box-shadow: 0 10px 26px -10px var(--purple-glow); }
+  .div-cta-glyph{
+    position:relative; flex-shrink:0;
+    width:88px; height:88px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    border:1px solid var(--line);
+  }
+  .div-cta-glyph::before{
+    content:""; position:absolute; inset:-10px; border-radius:50%; border:1px solid var(--gold-dim);
+    opacity:.5; animation: ringPulse 3.2s ease-in-out infinite;
+  }
+  @keyframes ringPulse{
+    0%,100%{ transform:scale(1); opacity:.4;} 50%{ transform:scale(1.08); opacity:.75; }
+  }
+  .div-cta-glyph svg{ width:34px; height:34px; color: var(--gold); }
+  @media (max-width: 620px){
+    .div-cta{ flex-direction:column; text-align:center; padding:28px 22px; }
+    .div-cta-text{ text-align:center; }
+    .div-cta-text p{ margin-left:auto; margin-right:auto; }
+  }
+
+  /* ---------- divination flow ---------- */
+  .div-step{ padding: 44px 34px 40px; text-align:center; }
+  .div-step .step-eyebrow{
+    font-family: var(--display); font-size:.66rem; letter-spacing:.3em; color: var(--gold-dim);
+  }
+  .div-step h3{
+    font-family: var(--serif); font-size:1.4rem; font-weight:700; margin-top:10px; color: var(--ink);
+  }
+  .div-step .hint{
+    margin-top:12px; font-size:.88rem; color: var(--ink-dim); font-weight:300; line-height:1.9;
+    max-width:420px; margin-left:auto; margin-right:auto;
+  }
+
+  .aspect-grid{
+    display:grid; grid-template-columns:1fr 1fr; gap:14px; max-width:380px; margin: 28px auto 0;
+  }
+  .aspect-btn{
+    cursor:pointer; background: var(--bg-panel); border:1px solid var(--line); border-radius:4px;
+    padding: 20px 10px; color: var(--ink-dim); font-family: var(--serif); font-size:1rem;
+    transition: border-color .25s, color .25s, transform .25s;
+  }
+  .aspect-btn:hover{ border-color: var(--gold); color: var(--gold-bright); transform: translateY(-4px); }
+
+  .draw-btn{
+    margin-top: 30px; cursor:pointer;
+    width:130px; height:130px; border-radius:50%;
+    background: radial-gradient(circle at 50% 35%, var(--purple-2), var(--bg-panel) 75%);
+    border:1px solid var(--gold);
+    color: var(--gold-bright); font-family: var(--serif); font-size:1.05rem; letter-spacing:.06em;
+    display:flex; align-items:center; justify-content:center;
+    transition: transform .3s ease, box-shadow .3s ease;
+  }
+  .draw-btn:hover{ transform: scale(1.06); box-shadow: 0 0 40px -6px var(--purple-glow); }
+  .draw-btn:active{ transform: scale(.97); }
+
+  .chosen-tag{
+    display:inline-block; margin-top:14px; font-size:.8rem; color: var(--gold);
+    border:1px solid var(--line); border-radius:20px; padding:4px 16px;
+  }
+
+  .restricted-notice{
+    margin-top:26px; padding: 20px 22px; border:1px solid var(--line); border-radius:4px;
+    background: rgba(160,60,60,.08); color: var(--ink-dim); font-size:.86rem; line-height:1.9; font-weight:300;
+  }
+  .restricted-notice strong{ color:#e08a8a; display:block; margin-bottom:6px; font-family:var(--serif); font-size:.98rem; }
+
+  .result-wrap{ display:grid; grid-template-columns: 230px 1fr; }
+  .result-media{
+    padding: 34px 28px; display:flex; flex-direction:column; align-items:center;
+    border-right: 1px solid var(--line);
+  }
+  .result-media .frame-outer{
+    width:100%; max-width:190px; aspect-ratio:2/3.35;
+    display:flex; align-items:center; justify-content:center; overflow:visible;
+  }
+  .result-card-img{
+    width:100%; height:100%; object-fit:cover; border-radius:8px;
+    border:1px solid var(--line); box-shadow:0 20px 40px -14px rgba(0,0,0,.6);
+    animation: cardInUpright .55s cubic-bezier(.2,.8,.25,1);
+  }
+  .result-card-img.is-reversed{ animation: cardInReversed .55s cubic-bezier(.2,.8,.25,1); }
+  @keyframes cardInUpright{ 0%{ opacity:0; transform: scale(.85) rotate(0deg);} 100%{ opacity:1; transform: scale(1) rotate(0deg);} }
+  @keyframes cardInReversed{ 0%{ opacity:0; transform: scale(.85) rotate(180deg);} 100%{ opacity:1; transform: scale(1) rotate(180deg);} }
+
+  .polarity-badge{
+    margin-top:16px; font-family: var(--display); font-size:.68rem; letter-spacing:.24em;
+    padding:5px 14px; border-radius:20px; border:1px solid var(--gold-dim); color: var(--gold);
+  }
+  .polarity-badge.reversed{ border-color:#9a7bd6; color:#c3aaf0; }
+
+  .result-info{ padding: 32px 34px 34px 30px; text-align:left; min-width:0; }
+  .result-info h3{ font-family: var(--serif); font-size:1.5rem; font-weight:700; color: var(--ink); }
+  .result-info .name-en{ font-family: var(--display); font-size:.78rem; letter-spacing:.12em; color: var(--ink-faint); margin-top:4px; }
+
+  .aspect-highlight{
+    margin-top:20px; padding: 16px 18px; border-left:2px solid var(--gold);
+    background: rgba(205,168,78,.06); border-radius:2px;
+  }
+  .aspect-highlight h4{ font-family: var(--serif); font-size:.88rem; color: var(--gold-bright); font-weight:600; }
+  .aspect-highlight p{ margin-top:6px; font-size:.86rem; line-height:1.85; color: var(--ink-dim); font-weight:300; }
+
+  .result-desc{ margin-top:16px; font-size:.86rem; line-height:1.9; color: var(--ink-dim); font-weight:300; }
+
+  .reminder-note{
+    margin-top:22px; padding-top:18px; border-top: 1px dashed var(--line);
+    font-size:.8rem; color: var(--ink-faint); line-height:1.85; font-weight:300;
+  }
+  .reminder-note strong{ color: var(--ink-dim); }
+  .reminder-warn{
+    margin-top:10px; color:#e0b98a; font-size:.8rem; line-height:1.85;
+  }
+
+  .div-actions{ margin-top:24px; display:flex; gap:12px; }
+  .div-actions button{
+    flex:1; padding:11px 14px; border-radius:2px; cursor:pointer;
+    font-family: var(--serif); font-size:.88rem; letter-spacing:.03em;
+    transition: background .25s, color .25s, border-color .25s;
+  }
+  .div-actions .btn-ghost{ background:none; border:1px solid var(--line); color: var(--ink-dim); }
+  .div-actions .btn-ghost:hover{ border-color: var(--gold); color: var(--gold-bright); }
+  .div-actions .btn-solid{ background: var(--gold); border:1px solid var(--gold); color:#1a0f2e; font-weight:600; }
+  .div-actions .btn-solid:hover{ background: var(--gold-bright); }
+
+  @media (max-width: 620px){
+    .result-wrap{ grid-template-columns:1fr; }
+    .result-media{ border-right:none; border-bottom:1px solid var(--line); }
+    .result-info{ padding:26px 24px 30px; }
+  }
 </style>
 </head>
 <body>
+
+<div class="online-bar hidden" id="onlineBar">
+  <span class="pulse-dot"></span>
+  <span id="onlineText">連線中…</span>
+</div>
 
 <div id="stars"></div>
 
@@ -404,6 +593,18 @@
     <div class="modal-body" id="modalBody"></div>
   </div>
 </div>
+
+<div class="modal-overlay" id="divOverlay">
+  <div class="modal" id="divPanel" role="dialog" aria-modal="true">
+    <button class="modal-close" id="divClose" aria-label="關閉">&times;</button>
+    <div id="divBody"></div>
+  </div>
+</div>
+
+<!-- Firebase（僅用於「目前在線人數」統計；免費 Spark 方案即可）-->
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-database-compat.js"></script>
 
 <script>
 (function(){
@@ -467,7 +668,17 @@
   function renderHome(){
     view = { screen:'home', suitKey:null };
     crumbEl.innerHTML = '';
-    var html = '<div class="section-head"><h2>選擇一個牌組</h2><p>大阿爾克那訴說靈魂的重大課題；四組小阿爾克那則對應日常的行動、情感、思緒與現實。</p></div>';
+    var html = '' +
+      '<div class="div-cta">' +
+        '<div class="div-cta-text">' +
+          '<div class="eyebrow">DIVINATION</div>' +
+          '<h2>靜下心來，抽一張牌</h2>' +
+          '<p>在心中默想你想詢問的問題——關於愛情、事業、財運或健康，讓貝拉為你抽出此刻的指引。</p>' +
+          '<button class="div-cta-btn" id="openDivBtn">開始占卜</button>' +
+        '</div>' +
+        '<div class="div-cta-glyph">' + glyphEye() + '</div>' +
+      '</div>';
+    html += '<div class="section-head"><h2>選擇一個牌組</h2><p>大阿爾克那訴說靈魂的重大課題；四組小阿爾克那則對應日常的行動、情感、思緒與現實。</p></div>';
     html += '<div class="cat-grid">';
     CATEGORY_ORDER.forEach(function(cat){
       html += '' +
@@ -485,7 +696,10 @@
       el.addEventListener('click', function(){ renderSuit(el.getAttribute('data-suit')); });
       el.addEventListener('keydown', function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); renderSuit(el.getAttribute('data-suit')); } });
     });
+    document.getElementById('openDivBtn').addEventListener('click', openDivination);
   }
+
+  function glyphEye(){ return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><path d="M2 12 C5 6 9 4 12 4 C15 4 19 6 22 12 C19 18 15 20 12 20 C9 20 5 18 2 12 Z"/><circle cx="12" cy="12" r="3.2"/></svg>'; }
 
   function accentFor(catKey){
     var found = CATEGORY_ORDER.filter(function(c){return c.key===catKey;})[0];
@@ -612,6 +826,208 @@
   closeBtn.addEventListener('click', closeModal);
   overlay.addEventListener('click', function(e){ if(e.target===overlay) closeModal(); });
   document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeModal(); });
+
+  // ================= 占卜功能 =================
+
+  // 逆位機率：0.5 為正逆各半；可依需求調整（建議範圍 0.35～0.5，詳見說明文件）
+  var REVERSED_PROBABILITY = 0.45;
+
+  var ASPECTS = [
+    { key:'love', label:'愛情' },
+    { key:'career', label:'事業' },
+    { key:'wealth', label:'財運' },
+    { key:'health', label:'健康' }
+  ];
+  function aspectLabelOf(key){
+    var f = ASPECTS.filter(function(a){ return a.key===key; })[0];
+    return f ? f.label : key;
+  }
+
+  // 使用瀏覽器原生的加密隨機數（比 Math.random 更均勻、不可預測）
+  function secureRandom(){
+    if(window.crypto && window.crypto.getRandomValues){
+      var arr = new Uint32Array(1);
+      window.crypto.getRandomValues(arr);
+      return arr[0] / 4294967296;
+    }
+    return Math.random();
+  }
+
+  // 每張牌被抽中的機率均等（1/78），正逆位各自獨立判定
+  function drawRandomCard(){
+    var idx = Math.floor(secureRandom() * CARDS.length);
+    var reversed = secureRandom() < REVERSED_PROBABILITY;
+    return { card: CARDS[idx], reversed: reversed };
+  }
+
+  // 避開的時段：下午 5-7 點、晚上 11 點到凌晨 1 點
+  function getRestrictedWindow(){
+    var now = new Date();
+    var mins = now.getHours()*60 + now.getMinutes();
+    if(mins >= 17*60 && mins < 19*60) return '17:00–19:00';
+    if(mins >= 23*60 || mins < 1*60) return '23:00–01:00';
+    return null;
+  }
+
+  function getLastDrawTs(aspect){
+    try{ return parseInt(localStorage.getItem('bella_last_'+aspect) || '0', 10); }catch(e){ return 0; }
+  }
+  function setLastDrawTs(aspect){
+    try{ localStorage.setItem('bella_last_'+aspect, String(Date.now())); }catch(e){}
+  }
+  function daysSince(ts){
+    if(!ts) return Infinity;
+    return (Date.now() - ts) / 86400000;
+  }
+
+  var divOverlay = document.getElementById('divOverlay');
+  var divBody = document.getElementById('divBody');
+  var divClose = document.getElementById('divClose');
+  var divState = { aspect:null, prevDays:Infinity, draw:null };
+
+  function openDivination(){
+    divState = { aspect:null, prevDays:Infinity, draw:null };
+    renderDivStep1();
+    divOverlay.classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+  function closeDivination(){
+    divOverlay.classList.remove('open');
+    document.body.style.overflow = '';
+  }
+  divClose.addEventListener('click', closeDivination);
+  divOverlay.addEventListener('click', function(e){ if(e.target===divOverlay) closeDivination(); });
+  document.addEventListener('keydown', function(e){ if(e.key==='Escape' && divOverlay.classList.contains('open')) closeDivination(); });
+
+  function renderDivStep1(){
+    divBody.innerHTML = '' +
+      '<div class="div-step">' +
+        '<div class="step-eyebrow">STEP 1</div>' +
+        '<h3>你想詢問的是哪個面向？</h3>' +
+        '<p class="hint">請先在心中默念你真正想問的問題，接著選擇它最貼近的面向。</p>' +
+        '<div class="aspect-grid" id="aspectGrid"></div>' +
+      '</div>';
+    var grid = document.getElementById('aspectGrid');
+    grid.innerHTML = ASPECTS.map(function(a){
+      return '<div class="aspect-btn" data-a="'+a.key+'" tabindex="0" role="button">'+a.label+'</div>';
+    }).join('');
+    Array.prototype.forEach.call(grid.querySelectorAll('.aspect-btn'), function(el){
+      el.addEventListener('click', function(){
+        divState.aspect = el.getAttribute('data-a');
+        divState.prevDays = daysSince(getLastDrawTs(divState.aspect));
+        renderDivStep2();
+      });
+      el.addEventListener('keydown', function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); el.click(); } });
+    });
+  }
+
+  function renderDivStep2(){
+    var restricted = getRestrictedWindow();
+    var html = '' +
+      '<div class="div-step">' +
+        '<div class="step-eyebrow">STEP 2</div>' +
+        '<h3>在心中默念你的問題</h3>' +
+        '<span class="chosen-tag">面向：'+aspectLabelOf(divState.aspect)+'</span>' +
+        '<p class="hint">準備好了嗎？靜下心，把問題在心裡再默念一次，然後抽出這一刻屬於你的牌。</p>';
+    if(restricted){
+      html += '<div class="restricted-notice"><strong>此時段磁場不穩定</strong>' +
+        '目前正值 '+restricted+' 之間，建議避開這段時間占卜。請稍後再回來，讓心緒與時機都準備好再問。</div>' +
+        '<div class="div-actions"><button class="btn-ghost" id="divBackBtn">重新選擇面向</button></div>';
+    } else {
+      html += '<button class="draw-btn" id="drawBtn">抽一張牌</button>';
+      if(divState.prevDays < 7){
+        html += '<div class="reminder-warn">你在 '+Math.floor(divState.prevDays)+' 天前才問過「'+aspectLabelOf(divState.aspect)+'」的問題，同一個問題建議間隔至少一週再問，這次的結果僅供參考。</div>';
+      }
+      html += '<div class="div-actions"><button class="btn-ghost" id="divBackBtn">重新選擇面向</button></div>';
+    }
+    html += '</div>';
+    divBody.innerHTML = html;
+    document.getElementById('divBackBtn').addEventListener('click', renderDivStep1);
+    var drawBtn = document.getElementById('drawBtn');
+    if(drawBtn){ drawBtn.addEventListener('click', performDraw); }
+  }
+
+  function performDraw(){
+    // 抽牌前再檢查一次時段，避免使用者停留跨過了限制時段
+    if(getRestrictedWindow()){ renderDivStep2(); return; }
+    divState.draw = drawRandomCard();
+    setLastDrawTs(divState.aspect);
+    renderDivStep3();
+  }
+
+  function renderDivStep3(){
+    var card = divState.draw.card;
+    var reversed = divState.draw.reversed;
+    var polarity = reversed ? 'reversed' : 'upright';
+    var polarityData = card[polarity] || {};
+    var keywords = reversed ? card.reversed_keywords : card.upright_keywords;
+    var aspectText = polarityData[divState.aspect] || '';
+
+    divBody.innerHTML = '' +
+      '<div class="result-wrap">' +
+        '<div class="result-media">' +
+          '<div class="frame-outer"><img class="result-card-img'+(reversed?' is-reversed':'')+'" src="images/'+card.image+'" alt="'+card.name+'"></div>' +
+          '<div class="polarity-badge'+(reversed?' reversed':'')+'">'+(reversed?'逆位 REVERSED':'正位 UPRIGHT')+'</div>' +
+        '</div>' +
+        '<div class="result-info">' +
+          '<div class="chosen-tag">你的問題面向：'+aspectLabelOf(divState.aspect)+'</div>' +
+          '<h3 style="margin-top:12px;">'+card.name+'</h3>' +
+          '<div class="name-en">'+(card.name_en||'')+'</div>' +
+          '<div class="keywords">'+ (keywords||[]).map(function(k){ return '<span>'+k+'</span>'; }).join('') +'</div>' +
+          (aspectText ? '<div class="aspect-highlight"><h4>'+aspectLabelOf(divState.aspect)+'指引</h4><p>'+aspectText+'</p></div>' : '') +
+          '<div class="result-desc">'+(card.description||'')+'</div>' +
+          '<div class="reminder-note">' +
+            '<strong>小提醒：</strong>同一個問題，建議至少間隔一週再重新詢問，讓事件有足夠時間開展，結果也會更準確。' +
+            (divState.prevDays < 7 ? '<div class="reminder-warn">（你這次距離上次詢問「'+aspectLabelOf(divState.aspect)+'」僅 '+Math.floor(divState.prevDays)+' 天）</div>' : '') +
+          '</div>' +
+          '<div class="div-actions">' +
+            '<button class="btn-ghost" id="divAgainBtn">重新占卜</button>' +
+            '<button class="btn-solid" id="divDoneBtn">完成</button>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+    document.getElementById('divAgainBtn').addEventListener('click', function(){ divState={aspect:null,prevDays:Infinity,draw:null}; renderDivStep1(); });
+    document.getElementById('divDoneBtn').addEventListener('click', closeDivination);
+  }
+
+  // ================= 在線人數（Firebase Realtime Database 免費方案）=================
+  // 請將下方換成你自己 Firebase 專案的設定值（Firebase Console → 專案設定 → 一般 → 你的應用程式）
+  var firebaseConfig = {
+    apiKey: "YOUR_API_KEY",
+    authDomain: "YOUR_PROJECT.firebaseapp.com",
+    databaseURL: "https://YOUR_PROJECT-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "YOUR_PROJECT"
+  };
+
+  function initOnlinePresence(){
+    if(!firebaseConfig.apiKey || firebaseConfig.apiKey.indexOf('YOUR_') === 0) return; // 尚未設定，靜默略過
+    if(typeof firebase === 'undefined') return;
+    try{
+      firebase.initializeApp(firebaseConfig);
+      var db = firebase.database();
+      var bar = document.getElementById('onlineBar');
+      var text = document.getElementById('onlineText');
+
+      firebase.auth().onAuthStateChanged(function(user){
+        if(!user) return;
+        var myRef = db.ref('presence/' + user.uid);
+        db.ref('.info/connected').on('value', function(snap){
+          if(snap.val() === true){
+            myRef.onDisconnect().remove();
+            myRef.set(true);
+          }
+        });
+      });
+      firebase.auth().signInAnonymously().catch(function(){});
+
+      db.ref('presence').on('value', function(snap){
+        var count = snap.numChildren();
+        text.textContent = '目前有 ' + count + ' 人正在貝拉神秘魔法屋占卜';
+        bar.classList.remove('hidden');
+      });
+    }catch(e){ /* 靜默失敗，不影響其餘網站功能 */ }
+  }
+  initOnlinePresence();
 
 })();
 </script>
