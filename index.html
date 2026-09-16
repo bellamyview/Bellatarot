@@ -503,9 +503,13 @@
   .result-card-img{
     width:100%; height:100%; object-fit:cover; border-radius:8px;
     border:1px solid var(--line); box-shadow:0 20px 40px -14px rgba(0,0,0,.6);
-    animation: cardInUpright .55s cubic-bezier(.2,.8,.25,1);
+    transform: rotate(0deg);
+    animation: cardInUpright .55s cubic-bezier(.2,.8,.25,1) forwards;
   }
-  .result-card-img.is-reversed{ animation: cardInReversed .55s cubic-bezier(.2,.8,.25,1); }
+  .result-card-img.is-reversed{
+    transform: rotate(180deg);
+    animation: cardInReversed .55s cubic-bezier(.2,.8,.25,1) forwards;
+  }
   @keyframes cardInUpright{ 0%{ opacity:0; transform: scale(.85) rotate(0deg);} 100%{ opacity:1; transform: scale(1) rotate(0deg);} }
   @keyframes cardInReversed{ 0%{ opacity:0; transform: scale(.85) rotate(180deg);} 100%{ opacity:1; transform: scale(1) rotate(180deg);} }
 
