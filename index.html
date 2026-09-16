@@ -249,7 +249,7 @@
     position:fixed; inset:0; z-index:50;
     background: rgba(6,3,12,.82);
     backdrop-filter: blur(3px);
-    display:flex; align-items:flex-start; justify-content:center;
+    display:flex; align-items:center; justify-content:center;
     padding: 40px 18px;
     overflow-y:auto;
     opacity:0; pointer-events:none;
@@ -259,6 +259,7 @@
 
   .modal{
     width:100%; max-width: 780px;
+    margin: auto;
     background: linear-gradient(160deg, var(--bg-panel-2), var(--bg-deep));
     border: 1px solid var(--line);
     border-radius: 6px;
@@ -406,9 +407,9 @@
   /* ---------- divination CTA (home banner) ---------- */
   .div-cta{
     position:relative;
-    display:flex; align-items:center; justify-content:space-between; gap:28px;
+    display:flex; flex-direction:column; align-items:center; text-align:center;
     margin: 4px 0 46px;
-    padding: 30px 36px;
+    padding: 40px 28px 38px;
     border-top: 1px solid var(--line);
     border-bottom: 1px solid var(--line);
   }
@@ -417,43 +418,30 @@
     width:34px; height:1px; background: var(--gold-dim);
   }
   .div-cta::before{ top:-1px; } .div-cta::after{ bottom:-1px; }
-  .div-cta-text{ text-align:left; }
-  .div-cta-text .eyebrow{
+  .div-cta-sphere{
+    margin-bottom:14px; display:flex; flex-direction:column; align-items:center; gap:10px;
+  }
+  .div-cta .eyebrow{
     font-family: var(--display); font-size:.66rem; letter-spacing:.32em; color: var(--gold-dim);
   }
-  .div-cta-text h2{
+  .div-cta h2{
     font-family: var(--serif); font-size: clamp(1.3rem, 2.6vw, 1.7rem); font-weight:700;
     margin-top:8px; color: var(--ink);
   }
-  .div-cta-text p{
+  .div-cta p{
     margin-top:8px; font-size:.86rem; color: var(--ink-dim); font-weight:300; max-width:420px; line-height:1.85;
+    margin-left:auto; margin-right:auto;
   }
   .div-cta-btn{
-    margin-top:16px; display:inline-block; cursor:pointer;
+    margin-top:20px; display:inline-block; cursor:pointer;
     background:none; border:1px solid var(--gold); color: var(--gold-bright);
     font-family: var(--serif); font-size:.92rem; letter-spacing:.05em;
     padding: 10px 26px; border-radius:2px;
     transition: background .25s ease, color .25s ease, box-shadow .25s ease;
   }
   .div-cta-btn:hover{ background: var(--gold); color: #1a0f2e; box-shadow: 0 10px 26px -10px var(--purple-glow); }
-  .div-cta-glyph{
-    position:relative; flex-shrink:0;
-    width:88px; height:88px; border-radius:50%;
-    display:flex; align-items:center; justify-content:center;
-    border:1px solid var(--line);
-  }
-  .div-cta-glyph::before{
-    content:""; position:absolute; inset:-10px; border-radius:50%; border:1px solid var(--gold-dim);
-    opacity:.5; animation: ringPulse 3.2s ease-in-out infinite;
-  }
-  @keyframes ringPulse{
-    0%,100%{ transform:scale(1); opacity:.4;} 50%{ transform:scale(1.08); opacity:.75; }
-  }
-  .div-cta-glyph svg{ width:34px; height:34px; color: var(--gold); }
   @media (max-width: 620px){
-    .div-cta{ flex-direction:column; text-align:center; padding:28px 22px; }
-    .div-cta-text{ text-align:center; }
-    .div-cta-text p{ margin-left:auto; margin-right:auto; }
+    .div-cta{ padding:28px 20px 30px; }
   }
 
   /* ---------- divination flow ---------- */
@@ -708,16 +696,15 @@
 
   function renderHome(){
     view = { screen:'home', suitKey:null };
+    stopHomeSphere();
     crumbEl.innerHTML = '';
     var html = '' +
       '<div class="div-cta">' +
-        '<div class="div-cta-text">' +
-          '<div class="eyebrow">DIVINATION</div>' +
-          '<h2>靜下心來，抽一張牌</h2>' +
-          '<p>在心中默想你想詢問的問題——關於愛情、事業、財運或健康，讓貝拉為你抽出此刻的指引。</p>' +
-          '<button class="div-cta-btn" id="openDivBtn">開始占卜</button>' +
-        '</div>' +
-        '<div class="div-cta-glyph">' + glyphEye() + '</div>' +
+        '<div class="div-cta-sphere"><div class="card-sphere" id="homeCardSphere"></div><div class="card-sphere-hint">拖曳可轉動牌陣</div></div>' +
+        '<div class="eyebrow">DIVINATION</div>' +
+        '<h2>靜下心來，抽一張牌</h2>' +
+        '<p>在心中默想你想詢問的問題——關於愛情、事業、財運或健康，讓貝拉為你抽出此刻的指引。</p>' +
+        '<button class="div-cta-btn" id="openDivBtn">開始占卜</button>' +
       '</div>';
     html += '<div class="section-head"><h2>選擇一個牌組</h2><p>大阿爾克那訴說靈魂的重大課題；四組小阿爾克那則對應日常的行動、情感、思緒與現實。</p></div>';
     html += '<div class="toolbar"><div class="search-box"><input type="text" id="searchInput" placeholder="搜尋全部 78 張牌，例如：戀人、聖杯三、Star..." autocomplete="off"></div><div class="search-note hidden" id="searchNote"></div></div>';
@@ -740,6 +727,9 @@
       el.addEventListener('keydown', function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); renderSuit(el.getAttribute('data-suit')); } });
     });
     document.getElementById('openDivBtn').addEventListener('click', openDivination);
+
+    var homeSphereEl = document.getElementById('homeCardSphere');
+    if(homeSphereEl){ homeSphereCtl = createCardSphere(homeSphereEl); }
 
     // 首頁搜尋：直接搜尋全部 78 張牌
     bindGlobalSearch(function(){
@@ -812,6 +802,7 @@
 
   function renderSuit(suitKey){
     view = { screen:'suit', suitKey: suitKey };
+    stopHomeSphere();
     var meta = SUIT_META[suitKey] || {};
     var accent = accentFor(suitKey);
     var label = labelFor(suitKey);
@@ -997,22 +988,34 @@
   var divState = { aspect:null, prevDays:Infinity, draw:null };
 
   function openDivination(){
+    stopHomeSphere();
     divState = { aspect:null, prevDays:Infinity, draw:null };
     renderDivStep1();
     divOverlay.classList.add('open');
     document.body.style.overflow = 'hidden';
   }
   function closeDivination(){
-    stopCardSphere();
+    stopDivSphere();
     divOverlay.classList.remove('open');
     document.body.style.overflow = '';
+    // 若背景仍是首頁，關閉視窗後恢復首頁的裝飾牌陣球
+    var homeSphereEl = document.getElementById('homeCardSphere');
+    if(homeSphereEl){ homeSphereCtl = createCardSphere(homeSphereEl); }
   }
   divClose.addEventListener('click', closeDivination);
   divOverlay.addEventListener('click', function(e){ if(e.target===divOverlay) closeDivination(); });
   document.addEventListener('keydown', function(e){ if(e.key==='Escape' && divOverlay.classList.contains('open')) closeDivination(); });
 
-  // ---------------- 3D 牌陣球（抽卡特效） ----------------
-  var sphereCtl = null;
+  // ---------------- 3D 牌陣球（抽卡特效，首頁裝飾與占卜視窗共用同一套邏輯） ----------------
+  var homeSphereCtl = null;
+  var divSphereCtl = null;
+
+  function stopHomeSphere(){
+    if(homeSphereCtl){ homeSphereCtl.stop(); homeSphereCtl = null; }
+  }
+  function stopDivSphere(){
+    if(divSphereCtl){ divSphereCtl.stop(); divSphereCtl = null; }
+  }
 
   function fibonacciSpherePoints(count, radius){
     var pts = [];
@@ -1028,13 +1031,9 @@
     return pts;
   }
 
-  function stopCardSphere(){
-    if(sphereCtl){ sphereCtl.stop(); sphereCtl = null; }
-  }
-
-  function startCardSphere(container){
-    stopCardSphere();
-    if(!CARDS.length) return;
+  // 建立一顆獨立的牌陣球實例，回傳 { stop, spinAndReveal }；同一頁面可同時存在多顆（首頁一顆、占卜視窗一顆）
+  function createCardSphere(container){
+    if(!CARDS.length) return null;
 
     var radius = 118;
     var points = fibonacciSpherePoints(CARDS.length, radius);
@@ -1158,7 +1157,7 @@
     document.addEventListener('touchmove', onMove, { passive: false });
     document.addEventListener('touchend', onUp);
 
-    sphereCtl = {
+    var ctl = {
       stop: function(){
         cancelAnimationFrame(raf);
         document.removeEventListener('mousemove', onMove);
@@ -1177,10 +1176,11 @@
         spinStart = Date.now();
       }
     };
+    return ctl;
   }
 
   function renderDivStep1(){
-    stopCardSphere();
+    stopDivSphere();
     divBody.innerHTML = '' +
       '<div class="div-step">' +
         '<div class="step-eyebrow">STEP 1</div>' +
@@ -1203,7 +1203,7 @@
   }
 
   function renderDivStep2(){
-    stopCardSphere();
+    stopDivSphere();
     var restricted = getRestrictedWindow();
     var html = '' +
       '<div class="div-step">' +
@@ -1233,7 +1233,7 @@
     var drawBtn = document.getElementById('drawBtn');
     if(drawBtn){ drawBtn.addEventListener('click', performDraw); }
     var sphereEl = document.getElementById('cardSphere');
-    if(sphereEl){ startCardSphere(sphereEl); }
+    if(sphereEl){ divSphereCtl = createCardSphere(sphereEl); }
   }
 
   function performDraw(){
@@ -1247,21 +1247,21 @@
     var pick = drawRandomCard();
 
     function finish(){
-      stopCardSphere();
+      stopDivSphere();
       divState.draw = pick;
       setLastDrawTs(divState.aspect);
       renderDivStep3();
     }
 
-    if(sphereCtl && sphereCtl.spinAndReveal){
-      sphereCtl.spinAndReveal(pick.index, finish);
+    if(divSphereCtl && divSphereCtl.spinAndReveal){
+      divSphereCtl.spinAndReveal(pick.index, finish);
     } else {
       finish();
     }
   }
 
   function renderDivStep3(){
-    stopCardSphere();
+    stopDivSphere();
     var card = divState.draw.card;
     var reversed = divState.draw.reversed;
     var polarity = reversed ? 'reversed' : 'upright';
@@ -1372,12 +1372,16 @@
 
       db.ref('presence').on('value', function(snap){
         clearTimeout(watchdog);
-        var count = snap.numChildren() || 1;
+        var count = snap.numChildren();
+        console.log('[線上人數] presence 節點目前有 ' + count + ' 筆資料', snap.val());
+        if(count === 0){
+          console.warn('[線上人數] 讀到 0 筆資料，但這個分頁自己應該至少會寫入 1 筆。這通常代表 Realtime Database 規則沒有開放讀取 presence 節點，請到 Firebase Console → Realtime Database → 規則，確認設定為：{"rules":{"presence":{".read":"auth != null",".write":"auth != null"}}}');
+        }
         bar.classList.remove('hidden');
-        text.innerHTML = '目前有 <strong>' + count + '</strong> 人正在貝拉神秘魔法屋占卜';
+        text.innerHTML = '目前有 <strong>' + Math.max(count, 1) + '</strong> 人正在貝拉神秘魔法屋占卜';
       }, function(err){
         clearTimeout(watchdog);
-        fail('讀取 presence 失敗（' + err.code + '）。請把 Realtime Database 規則改成允許讀寫 presence 節點。');
+        fail('讀取 presence 失敗（' + err.code + '）。請把 Realtime Database 規則改成允許讀寫 presence 節點：{"rules":{"presence":{".read":"auth != null",".write":"auth != null"}}}');
       });
     });
   }
