@@ -490,6 +490,13 @@
   }
   .draw-btn:hover{ transform: scale(1.06); box-shadow: 0 0 40px -6px var(--purple-glow); }
   .draw-btn:active{ transform: scale(.97); }
+  .draw-btn:disabled{ cursor:default; }
+  .draw-btn.is-drawing{ animation: drawPulse 1s ease-in-out infinite; }
+  @keyframes drawPulse{
+    0%,100%{ box-shadow: 0 0 0 0 var(--purple-glow); }
+    50%{ box-shadow: 0 0 46px 8px var(--purple-glow); }
+  }
+  .div-actions button:disabled{ opacity:.5; cursor:default; }
 
   .chosen-tag{
     display:inline-block; margin-top:14px; font-size:.8rem; color: var(--gold);
@@ -961,7 +968,7 @@
   function drawRandomCard(){
     var idx = Math.floor(secureRandom() * CARDS.length);
     var reversed = secureRandom() < REVERSED_PROBABILITY;
-    return { card: CARDS[idx], reversed: reversed };
+    return { card: CARDS[idx], reversed: reversed, index: idx };
   }
 
   // 避開的時段：下午 5-7 點、晚上 11 點到凌晨 1 點
@@ -1036,6 +1043,11 @@
     var dragging = false;
     var last = { x: 0, y: 0 };
     var nodes = [];
+    var spinning = false;
+    var spinIndex = -1;
+    var spinStart = 0;
+    var spinDone = null;
+    var SPIN_MS = 1000;
 
     var frag = document.createDocumentFragment();
     CARDS.forEach(function(c, i){
@@ -1070,7 +1082,39 @@
       }
     }
 
+    function revealPickedCard(){
+      var target = nodes[spinIndex];
+      for (var i = 0; i < nodes.length; i++){
+        if(i === spinIndex) continue;
+        nodes[i].style.transition = 'opacity .4s ease';
+        nodes[i].style.opacity = '0';
+      }
+      if(target){
+        target.style.transition = 'transform .55s cubic-bezier(.2,.8,.25,1), opacity .25s ease';
+        target.style.zIndex = '3000';
+        target.style.opacity = '1';
+        target.style.transform = 'translate(-50%,-50%) translate3d(0px,0px,0) scale(2.8)';
+      }
+      var cb = spinDone;
+      spinDone = null;
+      setTimeout(function(){ if(cb) cb(); }, 500);
+    }
+
     function loop(){
+      if(spinning){
+        var elapsed = Date.now() - spinStart;
+        var boost = elapsed < SPIN_MS * 0.6 ? 6.5 : Math.max(0.4, 6.5 * (1 - (elapsed - SPIN_MS * 0.6) / (SPIN_MS * 0.4)));
+        rot.y += boost;
+        render();
+        if(elapsed >= SPIN_MS){
+          spinning = false;
+          cancelAnimationFrame(raf);
+          revealPickedCard();
+          return;
+        }
+        raf = requestAnimationFrame(loop);
+        return;
+      }
       if(!dragging){
         rot.y += vel.y;
         rot.x += vel.x;
@@ -1086,13 +1130,14 @@
       return (e.touches && e.touches.length) ? e.touches[0] : e;
     }
     function onDown(e){
+      if(spinning) return;
       dragging = true;
       var pt = pointFromEvent(e);
       last = { x: pt.clientX, y: pt.clientY };
       container.classList.add('dragging');
     }
     function onMove(e){
-      if(!dragging) return;
+      if(!dragging || spinning) return;
       var pt = pointFromEvent(e);
       var dx = pt.clientX - last.x, dy = pt.clientY - last.y;
       rot.y += dx * 0.4;
@@ -1120,6 +1165,16 @@
         document.removeEventListener('mouseup', onUp);
         document.removeEventListener('touchmove', onMove);
         document.removeEventListener('touchend', onUp);
+      },
+      // 讓球陣先快速自轉，接著把抽中的那張牌從球陣中放大「飛出」，動畫結束後呼叫 onDone
+      spinAndReveal: function(index, onDone){
+        dragging = false;
+        container.classList.remove('dragging');
+        container.classList.add('is-drawing');
+        spinIndex = Math.max(0, Math.min(nodes.length - 1, index));
+        spinDone = onDone;
+        spinning = true;
+        spinStart = Date.now();
       }
     };
   }
@@ -1184,10 +1239,25 @@
   function performDraw(){
     // 抽牌前再檢查一次時段，避免使用者停留跨過了限制時段
     if(getRestrictedWindow()){ renderDivStep2(); return; }
-    stopCardSphere();
-    divState.draw = drawRandomCard();
-    setLastDrawTs(divState.aspect);
-    renderDivStep3();
+    var drawBtn = document.getElementById('drawBtn');
+    var backBtn = document.getElementById('divBackBtn');
+    if(drawBtn){ drawBtn.disabled = true; drawBtn.classList.add('is-drawing'); drawBtn.textContent = '占卜中…'; }
+    if(backBtn){ backBtn.disabled = true; }
+
+    var pick = drawRandomCard();
+
+    function finish(){
+      stopCardSphere();
+      divState.draw = pick;
+      setLastDrawTs(divState.aspect);
+      renderDivStep3();
+    }
+
+    if(sphereCtl && sphereCtl.spinAndReveal){
+      sphereCtl.spinAndReveal(pick.index, finish);
+    } else {
+      finish();
+    }
   }
 
   function renderDivStep3(){
