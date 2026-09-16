@@ -104,7 +104,7 @@
 
   /* ---------- breadcrumb / back nav ---------- */
   .crumbbar{
-    display:flex; align-items:center; justify-content:center; gap:10px;
+    display:flex; align-items:center; justify-content:center; flex-wrap:wrap; gap:6px 10px;
     padding: 8px 24px 30px; font-size:.88rem; color: var(--ink-faint);
     min-height: 26px;
   }
@@ -112,6 +112,7 @@
     background:none; border:none; color: var(--gold); font-family:var(--sans);
     font-size:.88rem; cursor:pointer; letter-spacing:.03em; padding:2px 4px;
     border-bottom:1px solid transparent; transition: border-color .2s, color .2s;
+    white-space:nowrap;
   }
   .crumbbar button:hover{ border-color: var(--gold); color: var(--gold-bright); }
   .crumb-sep{ color: var(--ink-faint); opacity:.5; }
@@ -789,8 +790,17 @@
     var accent = accentFor(suitKey);
     var label = labelFor(suitKey);
 
-    crumbEl.innerHTML = '<button id="crumbHome">首頁</button><span class="crumb-sep">·</span><span class="crumb-current">'+label+'</span>';
+    crumbEl.innerHTML = '<button id="crumbHome">首頁</button>' +
+      CATEGORY_ORDER.map(function(cat){
+        if(cat.key === suitKey){
+          return '<span class="crumb-sep">·</span><span class="crumb-current">'+cat.label+'</span>';
+        }
+        return '<span class="crumb-sep">·</span><button class="crumb-cat" data-suit="'+cat.key+'">'+cat.label+'</button>';
+      }).join('');
     document.getElementById('crumbHome').addEventListener('click', renderHome);
+    Array.prototype.forEach.call(crumbEl.querySelectorAll('.crumb-cat'), function(el){
+      el.addEventListener('click', function(){ renderSuit(el.getAttribute('data-suit')); });
+    });
 
     var list = CARDS.filter(function(c){ return suitKey==='大阿爾克那' ? c.arcana==='大阿爾克那' : c.suit===suitKey; });
 
