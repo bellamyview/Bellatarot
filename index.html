@@ -194,9 +194,19 @@
   .search-box input:focus{ border-color: var(--gold); }
   .search-box input::placeholder{ color: var(--ink-faint); }
 
+  .toolbar{ flex-direction:column; align-items:center; gap:10px; }
+  .search-note{
+    font-size:.82rem; color: var(--ink-faint); letter-spacing:.03em; text-align:center;
+  }
+  .search-note b{ color: var(--gold); font-weight:600; }
+
   .card-grid{
     display:grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
     gap: 26px 20px;
+  }
+  .tcard .suit-hint{
+    margin-top:4px; font-family: var(--display); font-size:.6rem; letter-spacing:.2em;
+    text-transform:uppercase; color: var(--accent-c, var(--gold-dim)); opacity:.75;
   }
   .tcard{
     cursor:pointer; text-align:center;
@@ -683,7 +693,9 @@
         '<div class="div-cta-glyph">' + glyphEye() + '</div>' +
       '</div>';
     html += '<div class="section-head"><h2>選擇一個牌組</h2><p>大阿爾克那訴說靈魂的重大課題；四組小阿爾克那則對應日常的行動、情感、思緒與現實。</p></div>';
-    html += '<div class="cat-grid">';
+    html += '<div class="toolbar"><div class="search-box"><input type="text" id="searchInput" placeholder="搜尋全部 78 張牌，例如：戀人、聖杯三、Star..." autocomplete="off"></div><div class="search-note hidden" id="searchNote"></div></div>';
+    html += '<div class="card-grid hidden" id="cardGrid"></div>';
+    html += '<div class="cat-grid" id="catGrid">';
     CATEGORY_ORDER.forEach(function(cat){
       html += '' +
         '<div class="cat-card" data-suit="'+cat.key+'" style="--accent:'+cat.accent+'" tabindex="0" role="button" aria-label="'+cat.label+'">'+
@@ -701,6 +713,63 @@
       el.addEventListener('keydown', function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); renderSuit(el.getAttribute('data-suit')); } });
     });
     document.getElementById('openDivBtn').addEventListener('click', openDivination);
+
+    // 首頁搜尋：直接搜尋全部 78 張牌
+    bindGlobalSearch(function(){
+      document.getElementById('catGrid').classList.remove('hidden');
+    }, function(){
+      document.getElementById('catGrid').classList.add('hidden');
+    });
+  }
+
+  // ---------------- 全牌組搜尋 ----------------
+  // 比對範圍：中文牌名、英文牌名、牌組名稱、正逆位關鍵字
+  function searchAllCards(q){
+    var s = q.toLowerCase();
+    return CARDS.filter(function(c){
+      if((c.name||'').indexOf(q) > -1) return true;
+      if((c.name_en||'').toLowerCase().indexOf(s) > -1) return true;
+      if((c.suit||'').indexOf(q) > -1) return true;
+      if((c.arcana||'').indexOf(q) > -1) return true;
+      var kws = (c.upright_keywords||[]).concat(c.reversed_keywords||[]);
+      for(var i=0;i<kws.length;i++){ if(String(kws[i]).indexOf(q) > -1) return true; }
+      return false;
+    });
+  }
+
+  // 共用的搜尋框行為：有輸入 → 全牌組搜尋；清空 → 還原原本畫面
+  // onClear / onSearching 用來切換該頁面原本的內容顯示與否
+  function bindGlobalSearch(onClear, onSearching){
+    var input = document.getElementById('searchInput');
+    var note = document.getElementById('searchNote');
+    var grid = document.getElementById('cardGrid');
+    if(!input) return;
+
+    input.addEventListener('input', function(e){
+      var q = e.target.value.trim();
+      if(!q){
+        note.classList.add('hidden');
+        note.innerHTML = '';
+        if(onClear) onClear();
+        return;
+      }
+      var results = searchAllCards(q);
+      if(onSearching) onSearching();
+      grid.classList.remove('hidden');
+      note.classList.remove('hidden');
+      note.innerHTML = '全部牌組搜尋「<b>'+escapeHtml(q)+'</b>」：找到 <b>'+results.length+'</b> 張';
+      renderGrid(results, null, true);
+    });
+  }
+
+  function escapeHtml(str){
+    return String(str).replace(/[&<>"']/g, function(m){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m];
+    });
+  }
+
+  function catKeyOf(card){
+    return card.arcana === '大阿爾克那' ? '大阿爾克那' : card.suit;
   }
 
   function glyphEye(){ return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><path d="M2 12 C5 6 9 4 12 4 C15 4 19 6 22 12 C19 18 15 20 12 20 C9 20 5 18 2 12 Z"/><circle cx="12" cy="12" r="3.2"/></svg>'; }
@@ -731,37 +800,39 @@
       (meta.theme ? '<div class="element-tag" style="color:'+accent+'">'+ (meta.element && meta.element!=='—' ? meta.element+'元素 · ' : '') + meta.theme + '</div>' : '') +
     '</div>';
 
-    html += '<div class="toolbar"><div class="search-box"><input type="text" id="searchInput" placeholder="搜尋牌名，例如：戀人、聖杯三..." autocomplete="off"></div></div>';
+    html += '<div class="toolbar"><div class="search-box"><input type="text" id="searchInput" placeholder="搜尋全部 78 張牌，例如：戀人、聖杯三、Star..." autocomplete="off"></div><div class="search-note hidden" id="searchNote"></div></div>';
     html += '<div class="card-grid" id="cardGrid"></div>';
 
     mainEl.innerHTML = html;
     renderGrid(list, accent);
 
-    document.getElementById('searchInput').addEventListener('input', function(e){
-      var q = e.target.value.trim();
-      var filtered = q ? list.filter(function(c){ return c.name.indexOf(q)>-1 || (c.name_en||'').toLowerCase().indexOf(q.toLowerCase())>-1; }) : list;
-      renderGrid(filtered, accent);
-    });
+    // 搜尋時跨所有牌組；清空時回到本牌組
+    bindGlobalSearch(function(){ renderGrid(list, accent); }, null);
   }
 
-  function renderGrid(list, accent){
+  // accent 傳 null 時，每張牌各自使用所屬牌組的代表色（跨牌組搜尋結果用）
+  function renderGrid(list, accent, showSuitHint){
     var grid = document.getElementById('cardGrid');
+    if(!grid) return;
     if(!list.length){
       grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1;">沒有符合的牌卡</div>';
       return;
     }
     var html = '';
     list.forEach(function(c){
+      var cardAccent = accent || accentFor(catKeyOf(c));
       html += '' +
-        '<div class="tcard" data-id="'+c.id+'" style="--accent-c:'+accent+'" tabindex="0" role="button" aria-label="'+c.name+'">'+
+        '<div class="tcard" data-id="'+c.id+'" data-accent="'+cardAccent+'" style="--accent-c:'+cardAccent+'" tabindex="0" role="button" aria-label="'+c.name+'">'+
           '<div class="frame"><img src="images/'+c.image+'" alt="'+c.name+'" loading="lazy"></div>'+
           '<div class="label">'+c.name+'</div>'+
+          (showSuitHint ? '<div class="suit-hint">'+labelFor(catKeyOf(c))+'</div>' : '')+
         '</div>';
     });
     grid.innerHTML = html;
     Array.prototype.forEach.call(grid.querySelectorAll('.tcard'), function(el){
-      el.addEventListener('click', function(){ openModal(el.getAttribute('data-id'), accent); });
-      el.addEventListener('keydown', function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); openModal(el.getAttribute('data-id'), accent); } });
+      var a = el.getAttribute('data-accent');
+      el.addEventListener('click', function(){ openModal(el.getAttribute('data-id'), a); });
+      el.addEventListener('keydown', function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); openModal(el.getAttribute('data-id'), a); } });
     });
   }
 
@@ -996,44 +1067,95 @@
 
   // ================= 在線人數（Firebase Realtime Database 免費方案）=================
   // 請將下方換成你自己 Firebase 專案的設定值（Firebase Console → 專案設定 → 一般 → 你的應用程式）
+  // ★ 重點：一定要有 databaseURL，否則 firebase.database() 會直接拋錯，人數永遠不會顯示。
+  //   到 Firebase Console → Realtime Database，複製最上方那串網址貼進來。
+  //   常見兩種格式：
+  //     美國   https://<專案ID>-default-rtdb.firebaseio.com
+  //     亞洲   https://<專案ID>-default-rtdb.asia-southeast1.firebasedatabase.app
   var firebaseConfig = {
-  apiKey: "AIzaSyBRS5eKRjbqEdTKVqHw4d38ZFFTixGMVB4",
-  authDomain: "bellatarot-5806f.firebaseapp.com",
-  projectId: "bellatarot-5806f",
-  storageBucket: "bellatarot-5806f.firebasestorage.app",
-  messagingSenderId: "194721659538",
-  appId: "1:194721659538:web:f26623cb916f328254444b"
+    apiKey: "AIzaSyBRS5eKRjbqEdTKVqHw4d38ZFFTixGMVB4",
+    authDomain: "bellatarot-5806f.firebaseapp.com",
+    databaseURL: "https://bellatarot-5806f-default-rtdb.asia-southeast1.firebasedatabase.app", // ← 請確認與 Console 上完全一致
+    projectId: "bellatarot-5806f",
+    storageBucket: "bellatarot-5806f.firebasestorage.app",
+    messagingSenderId: "194721659538",
+    appId: "1:194721659538:web:f26623cb916f328254444b"
   };
 
   function initOnlinePresence(){
-    if(!firebaseConfig.apiKey || firebaseConfig.apiKey.indexOf('YOUR_') === 0) return; // 尚未設定，靜默略過
-    if(typeof firebase === 'undefined') return;
-    try{
-      firebase.initializeApp(firebaseConfig);
-      var db = firebase.database();
-      var bar = document.getElementById('onlineBar');
-      var text = document.getElementById('onlineText');
+    var bar = document.getElementById('onlineBar');
+    var text = document.getElementById('onlineText');
 
-      firebase.auth().onAuthStateChanged(function(user){
-        if(!user) return;
-        var myRef = db.ref('presence/' + user.uid);
-        db.ref('.info/connected').on('value', function(snap){
-          if(snap.val() === true){
-            myRef.onDisconnect().remove();
-            myRef.set(true);
-          }
-        });
+    // 失敗時在 Console 印出明確原因，方便排查（不會影響網站其他功能）
+    function fail(msg){
+      console.warn('[線上人數] ' + msg);
+      bar.classList.add('hidden');
+    }
+
+    if(typeof firebase === 'undefined'){
+      return fail('Firebase SDK 沒有載入。請確認三個 firebasejs script 沒被擋掉，且網頁是用 http/https 開啟（直接雙擊 file:// 開啟會失敗）。');
+    }
+    if(!firebaseConfig.apiKey || firebaseConfig.apiKey.indexOf('YOUR_') === 0){
+      return fail('firebaseConfig 尚未填入。');
+    }
+    if(!firebaseConfig.databaseURL){
+      return fail('firebaseConfig 缺少 databaseURL，這是 Realtime Database 必填欄位。');
+    }
+
+    // 先把列顯示出來，讓使用者看得到「連線中…」，成功後再換成人數
+    bar.classList.remove('hidden');
+    text.textContent = '連線中…';
+
+    try{
+      if(!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+    }catch(e){
+      return fail('initializeApp 失敗：' + e.message);
+    }
+
+    var db;
+    try{ db = firebase.database(); }
+    catch(e){ return fail('無法連線 Realtime Database（多半是 databaseURL 錯誤或資料庫尚未建立）：' + e.message); }
+
+    // 8 秒還沒讀到資料就提示可能的原因
+    var watchdog = setTimeout(function(){
+      fail('連線逾時，仍未讀到 presence 資料。請檢查：①Realtime Database 是否已建立 ②讀寫規則 ③Authentication 是否已開啟「匿名」登入。');
+    }, 8000);
+
+    firebase.auth().signInAnonymously().catch(function(err){
+      clearTimeout(watchdog);
+      fail('匿名登入失敗（' + err.code + '）。請到 Firebase Console → Authentication → Sign-in method，啟用「匿名」，並在 Authentication → Settings → 授權網域 加入你的網站網域。');
+    });
+
+    firebase.auth().onAuthStateChanged(function(user){
+      if(!user) return;
+
+      // 用 push() 產生每個分頁專屬的節點，同一人開多個分頁不會互相覆蓋
+      var myRef = db.ref('presence').push();
+
+      db.ref('.info/connected').on('value', function(snap){
+        if(snap.val() === true){
+          myRef.onDisconnect().remove();               // 關閉分頁時自動移除
+          myRef.set({ uid: user.uid, t: firebase.database.ServerValue.TIMESTAMP });
+        }
       });
-      firebase.auth().signInAnonymously().catch(function(){});
 
       db.ref('presence').on('value', function(snap){
-        var count = snap.numChildren();
-        text.textContent = '目前有 ' + count + ' 人正在貝拉神秘魔法屋占卜';
+        clearTimeout(watchdog);
+        var count = snap.numChildren() || 1;
         bar.classList.remove('hidden');
+        text.innerHTML = '目前有 <strong>' + count + '</strong> 人正在貝拉神秘魔法屋占卜';
+      }, function(err){
+        clearTimeout(watchdog);
+        fail('讀取 presence 失敗（' + err.code + '）。請把 Realtime Database 規則改成允許讀寫 presence 節點。');
       });
-    }catch(e){ /* 靜默失敗，不影響其餘網站功能 */ }
+    });
   }
-  initOnlinePresence();
+
+  if(document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', initOnlinePresence);
+  } else {
+    initOnlinePresence();
+  }
 
 })();
 </script>
