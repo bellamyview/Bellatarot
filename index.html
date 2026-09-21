@@ -350,6 +350,18 @@
     margin-top:6px; font-size:.83rem; line-height:1.85; color: var(--ink-dim); font-weight:300;
   }
 
+  .decision-block{
+    margin-top: 22px; padding-top:18px; border-top: 1px dashed var(--line);
+  }
+  .decision-block h4{
+    font-family:var(--serif); font-size:.86rem; color: var(--gold); font-weight:600;
+    display:flex; align-items:center; gap:7px;
+  }
+  .decision-block h4 .dot{ width:5px; height:5px; border-radius:50%; background: var(--accent-c, var(--gold)); }
+  .decision-block p{
+    margin-top:6px; font-size:.83rem; line-height:1.85; color: var(--ink-dim); font-weight:300;
+  }
+
   @media (max-width: 620px){
     .modal-body{ grid-template-columns: 1fr; }
     .modal-media{ border-right:none; border-bottom:1px solid var(--line); padding: 30px 24px 22px; flex-direction:row; gap:16px; align-items:center; }
@@ -440,6 +452,11 @@
     transition: background .25s ease, color .25s ease, box-shadow .25s ease;
   }
   .div-cta-btn:hover{ background: var(--gold); color: #1a0f2e; box-shadow: 0 10px 26px -10px var(--purple-glow); }
+  .div-cta-actions{ display:flex; flex-wrap:wrap; gap:14px; justify-content:center; margin-top:20px; }
+  .div-cta-btn.secondary{
+    border-color: var(--purple-2); color: var(--ink-dim);
+  }
+  .div-cta-btn.secondary:hover{ background: var(--purple-2); color:#fff; box-shadow: 0 10px 26px -10px var(--purple-glow); }
   @media (max-width: 620px){
     .div-cta{ padding:28px 20px 30px; }
   }
@@ -704,7 +721,11 @@
         '<div class="eyebrow">DIVINATION</div>' +
         '<h2>靜下心來，抽一張牌</h2>' +
         '<p>在心中默想你想詢問的問題——關於愛情、事業、財運或健康，讓貝拉為你抽出此刻的指引。</p>' +
-        '<button class="div-cta-btn" id="openDivBtn">開始占卜</button>' +
+        '<div class="div-cta-actions">' +
+          '<button class="div-cta-btn" id="openDivBtn">開始占卜</button>' +
+          '<button class="div-cta-btn secondary" id="openDecisionBtn">抽一支決策籤</button>' +
+        '</div>' +
+        '<p style="margin-top:14px;font-size:.78rem;color:var(--ink-faint);max-width:420px;">「決策籤」不分愛情、事業、財運、健康，只要面臨任何需要抉擇的時刻都能抽問，不限時間、不限次數。</p>' +
       '</div>';
     html += '<div class="section-head"><h2>選擇一個牌組</h2><p>大阿爾克那訴說靈魂的重大課題；四組小阿爾克那則對應日常的行動、情感、思緒與現實。</p></div>';
     html += '<div class="toolbar"><div class="search-box"><input type="text" id="searchInput" placeholder="搜尋全部 78 張牌，例如：戀人、聖杯三、Star..." autocomplete="off"></div><div class="search-note hidden" id="searchNote"></div></div>';
@@ -726,7 +747,8 @@
       el.addEventListener('click', function(){ renderSuit(el.getAttribute('data-suit')); });
       el.addEventListener('keydown', function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); renderSuit(el.getAttribute('data-suit')); } });
     });
-    document.getElementById('openDivBtn').addEventListener('click', openDivination);
+    document.getElementById('openDivBtn').addEventListener('click', function(){ openDivination('aspect'); });
+    document.getElementById('openDecisionBtn').addEventListener('click', function(){ openDivination('decision'); });
 
     var homeSphereEl = document.getElementById('homeCardSphere');
     if(homeSphereEl){ homeSphereCtl = createCardSphere(homeSphereEl); }
@@ -893,6 +915,9 @@
         aspectsHtml += '<div class="aspect-item"><h4><span class="dot" style="background:'+accent+'"></span>'+aspectLabels[k]+'</h4><p>'+polarityData[k]+'</p></div>';
       }
     });
+    var decisionHtml = polarityData.decision
+      ? '<div class="decision-block"><h4><span class="dot" style="background:'+accent+'"></span>決策籤指引</h4><p>'+polarityData.decision+'</p></div>'
+      : '';
 
     body.style.setProperty('--accent-c', accent);
     body.innerHTML = '' +
@@ -911,6 +936,7 @@
         '</div>' +
         '<div class="keywords">'+ (keywords||[]).map(function(k){ return '<span>'+k+'</span>'; }).join('') +'</div>' +
         '<div class="aspects">'+aspectsHtml+'</div>' +
+        decisionHtml +
       '</div>';
 
     Array.prototype.forEach.call(body.querySelectorAll('.polarity-tabs button'), function(btn){
@@ -985,12 +1011,17 @@
   var divOverlay = document.getElementById('divOverlay');
   var divBody = document.getElementById('divBody');
   var divClose = document.getElementById('divClose');
-  var divState = { aspect:null, prevDays:Infinity, draw:null };
+  var divState = { mode:'aspect', aspect:null, prevDays:Infinity, draw:null };
 
-  function openDivination(){
+  function openDivination(mode){
     stopHomeSphere();
-    divState = { aspect:null, prevDays:Infinity, draw:null };
-    renderDivStep1();
+    divState = { mode: mode==='decision' ? 'decision' : 'aspect', aspect:null, prevDays:Infinity, draw:null };
+    if(divState.mode === 'decision'){
+      // 決策籤不需要選面向、不限時段、不限次數，直接進入抽牌畫面
+      renderDivStep2();
+    } else {
+      renderDivStep1();
+    }
     divOverlay.classList.add('open');
     document.body.style.overflow = 'hidden';
   }
@@ -1204,13 +1235,20 @@
 
   function renderDivStep2(){
     stopDivSphere();
-    var restricted = getRestrictedWindow();
+    var isDecision = divState.mode === 'decision';
+    var restricted = !isDecision && getRestrictedWindow(); // 決策籤不受時段限制
+    var eyebrow = isDecision ? 'DECISION DRAW' : 'STEP 2';
+    var heading = isDecision ? '在心中想著那個讓你猶豫的選擇' : '在心中默念你的問題';
+    var hint = isDecision
+      ? '不需要分類是愛情、事業、財運或健康——只要是「該怎麼選」的問題都可以。靜下心，把兩個（或多個）選項在心裡想一遍，凝視飄浮的牌陣，然後抽出這一刻最貼近你直覺的一張牌。'
+      : '準備好了嗎？靜下心，把問題在心裡再默念一次，凝視飄浮的牌陣，感受此刻與你共鳴的能量。';
+
     var html = '' +
       '<div class="div-step">' +
-        '<div class="step-eyebrow">STEP 2</div>' +
-        '<h3>在心中默念你的問題</h3>' +
-        '<span class="chosen-tag">面向：'+aspectLabelOf(divState.aspect)+'</span>' +
-        '<p class="hint">準備好了嗎？靜下心，把問題在心裡再默念一次，凝視飄浮的牌陣，感受此刻與你共鳴的能量。</p>';
+        '<div class="step-eyebrow">'+eyebrow+'</div>' +
+        '<h3>'+heading+'</h3>' +
+        (isDecision ? '<span class="chosen-tag">決策籤 · 不限時間不限次數</span>' : '<span class="chosen-tag">面向：'+aspectLabelOf(divState.aspect)+'</span>') +
+        '<p class="hint">'+hint+'</p>';
     if(restricted){
       html += '<div class="restricted-notice"><strong>此時段磁場不穩定</strong>' +
         '目前正值 '+restricted+' 之間，建議避開這段時間占卜。請稍後再回來，讓心緒與時機都準備好再問。</div>' +
@@ -1222,14 +1260,18 @@
           '<div class="card-sphere-hint">拖曳可轉動牌陣 · 準備好了就按下方抽牌</div>' +
         '</div>' +
         '<button class="draw-btn" id="drawBtn">抽一張牌</button>';
-      if(divState.prevDays < 7){
+      if(!isDecision && divState.prevDays < 7){
         html += '<div class="reminder-warn">你在 '+Math.floor(divState.prevDays)+' 天前才問過「'+aspectLabelOf(divState.aspect)+'」的問題，同一個問題建議間隔至少一週再問，這次的結果僅供參考。</div>';
       }
-      html += '<div class="div-actions"><button class="btn-ghost" id="divBackBtn">重新選擇面向</button></div>';
+      html += '<div class="div-actions">' +
+        (isDecision ? '<button class="btn-ghost" id="divBackBtn">取消</button>' : '<button class="btn-ghost" id="divBackBtn">重新選擇面向</button>') +
+      '</div>';
     }
     html += '</div>';
     divBody.innerHTML = html;
-    document.getElementById('divBackBtn').addEventListener('click', renderDivStep1);
+    document.getElementById('divBackBtn').addEventListener('click', function(){
+      if(isDecision){ closeDivination(); } else { renderDivStep1(); }
+    });
     var drawBtn = document.getElementById('drawBtn');
     if(drawBtn){ drawBtn.addEventListener('click', performDraw); }
     var sphereEl = document.getElementById('cardSphere');
@@ -1237,8 +1279,9 @@
   }
 
   function performDraw(){
-    // 抽牌前再檢查一次時段，避免使用者停留跨過了限制時段
-    if(getRestrictedWindow()){ renderDivStep2(); return; }
+    var isDecision = divState.mode === 'decision';
+    // 抽牌前再檢查一次時段（決策籤不受時段限制），避免使用者停留跨過了限制時段
+    if(!isDecision && getRestrictedWindow()){ renderDivStep2(); return; }
     var drawBtn = document.getElementById('drawBtn');
     var backBtn = document.getElementById('divBackBtn');
     if(drawBtn){ drawBtn.disabled = true; drawBtn.classList.add('is-drawing'); drawBtn.textContent = '占卜中…'; }
@@ -1249,7 +1292,7 @@
     function finish(){
       stopDivSphere();
       divState.draw = pick;
-      setLastDrawTs(divState.aspect);
+      if(!isDecision){ setLastDrawTs(divState.aspect); } // 決策籤不限次數，不記錄冷卻時間
       renderDivStep3();
     }
 
@@ -1262,12 +1305,15 @@
 
   function renderDivStep3(){
     stopDivSphere();
+    var isDecision = divState.mode === 'decision';
     var card = divState.draw.card;
     var reversed = divState.draw.reversed;
     var polarity = reversed ? 'reversed' : 'upright';
     var polarityData = card[polarity] || {};
     var keywords = reversed ? card.reversed_keywords : card.upright_keywords;
-    var aspectText = polarityData[divState.aspect] || '';
+    var aspectText = isDecision ? (polarityData.decision || '') : (polarityData[divState.aspect] || '');
+    var aspectTitle = isDecision ? '決策指引' : (aspectLabelOf(divState.aspect)+'指引');
+    var chosenTagText = isDecision ? '決策籤' : ('你的問題面向：'+aspectLabelOf(divState.aspect));
 
     divBody.innerHTML = '' +
       '<div class="result-wrap">' +
@@ -1276,23 +1322,34 @@
           '<div class="polarity-badge'+(reversed?' reversed':'')+'">'+(reversed?'逆位 REVERSED':'正位 UPRIGHT')+'</div>' +
         '</div>' +
         '<div class="result-info">' +
-          '<div class="chosen-tag">你的問題面向：'+aspectLabelOf(divState.aspect)+'</div>' +
+          '<div class="chosen-tag">'+chosenTagText+'</div>' +
           '<h3 style="margin-top:12px;">'+card.name+'</h3>' +
           '<div class="name-en">'+(card.name_en||'')+'</div>' +
           '<div class="keywords">'+ (keywords||[]).map(function(k){ return '<span>'+k+'</span>'; }).join('') +'</div>' +
-          (aspectText ? '<div class="aspect-highlight"><h4>'+aspectLabelOf(divState.aspect)+'指引</h4><p>'+aspectText+'</p></div>' : '') +
+          (aspectText ? '<div class="aspect-highlight"><h4>'+aspectTitle+'</h4><p>'+aspectText+'</p></div>' : '') +
           '<div class="result-desc">'+(card.description||'')+'</div>' +
           '<div class="reminder-note">' +
-            '<strong>小提醒：</strong>同一個問題，建議至少間隔一週再重新詢問，讓事件有足夠時間開展，結果也會更準確。' +
-            (divState.prevDays < 7 ? '<div class="reminder-warn">（你這次距離上次詢問「'+aspectLabelOf(divState.aspect)+'」僅 '+Math.floor(divState.prevDays)+' 天）</div>' : '') +
+            (isDecision
+              ? '<strong>小提醒：</strong>決策籤不限時間、不限次數，遇到新的抉擇隨時可以再抽。但同一個問題重複問到自己滿意的答案為止，反而會失去參考價值，建議一個抉擇只抽一次，讓答案單純一點。'
+              : '<strong>小提醒：</strong>同一個問題，建議至少間隔一週再重新詢問，讓事件有足夠時間開展，結果也會更準確。' +
+                (divState.prevDays < 7 ? '<div class="reminder-warn">（你這次距離上次詢問「'+aspectLabelOf(divState.aspect)+'」僅 '+Math.floor(divState.prevDays)+' 天）</div>' : '')
+            ) +
           '</div>' +
           '<div class="div-actions">' +
-            '<button class="btn-ghost" id="divAgainBtn">重新占卜</button>' +
+            '<button class="btn-ghost" id="divAgainBtn">'+(isDecision ? '再抽一支決策籤' : '重新占卜')+'</button>' +
             '<button class="btn-solid" id="divDoneBtn">完成</button>' +
           '</div>' +
         '</div>' +
       '</div>';
-    document.getElementById('divAgainBtn').addEventListener('click', function(){ divState={aspect:null,prevDays:Infinity,draw:null}; renderDivStep1(); });
+    document.getElementById('divAgainBtn').addEventListener('click', function(){
+      if(isDecision){
+        divState = { mode:'decision', aspect:null, prevDays:Infinity, draw:null };
+        renderDivStep2();
+      } else {
+        divState = { mode:'aspect', aspect:null, prevDays:Infinity, draw:null };
+        renderDivStep1();
+      }
+    });
     document.getElementById('divDoneBtn').addEventListener('click', closeDivination);
   }
 
