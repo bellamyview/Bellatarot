@@ -1370,6 +1370,11 @@
     appId: "1:194721659538:web:f26623cb916f328254444b"
   };
 
+  // 心跳間隔：每個分頁多久回報一次「我還在線上」
+  var HEARTBEAT_MS = 20000;
+  // 過期門檻：超過這麼久沒有心跳，就視為幽靈連線（瀏覽器被強制關閉、斷網等未正常觸發 onDisconnect 的情況）
+  var STALE_MS = 45000;
+
   function initOnlinePresence(){
     var bar = document.getElementById('onlineBar');
     var text = document.getElementById('onlineText');
@@ -1417,25 +1422,61 @@
     firebase.auth().onAuthStateChanged(function(user){
       if(!user) return;
 
+      // 記錄本機時間與伺服器時間的差距，避免使用者的裝置時鐘不準造成誤判過期
+      var serverOffset = 0;
+      db.ref('.info/serverTimeOffset').on('value', function(snap){
+        serverOffset = snap.val() || 0;
+      });
+      function serverNow(){ return Date.now() + serverOffset; }
+
       // 用 push() 產生每個分頁專屬的節點，同一人開多個分頁不會互相覆蓋
       var myRef = db.ref('presence').push();
+      var heartbeatTimer = null;
+
+      function sendHeartbeat(){
+        myRef.set({ uid: user.uid, t: firebase.database.ServerValue.TIMESTAMP }).catch(function(){});
+      }
 
       db.ref('.info/connected').on('value', function(snap){
         if(snap.val() === true){
-          myRef.onDisconnect().remove();               // 關閉分頁時自動移除
-          myRef.set({ uid: user.uid, t: firebase.database.ServerValue.TIMESTAMP });
+          myRef.onDisconnect().remove();  // 正常斷線／關閉分頁時自動移除
+          sendHeartbeat();                // 立刻回報一次
+          if(heartbeatTimer) clearInterval(heartbeatTimer);
+          heartbeatTimer = setInterval(sendHeartbeat, HEARTBEAT_MS); // 之後每隔一段時間回報，證明「還活著」
         }
+      });
+      // 分頁被關閉、重新整理、切到背景太久時，主動移除自己的節點，減少殘留
+      window.addEventListener('beforeunload', function(){ myRef.remove(); });
+      document.addEventListener('visibilitychange', function(){
+        if(document.visibilityState === 'visible') sendHeartbeat();
       });
 
       db.ref('presence').on('value', function(snap){
         clearTimeout(watchdog);
-        var count = snap.numChildren();
-        console.log('[線上人數] presence 節點目前有 ' + count + ' 筆資料', snap.val());
-        if(count === 0){
-          console.warn('[線上人數] 讀到 0 筆資料，但這個分頁自己應該至少會寫入 1 筆。這通常代表 Realtime Database 規則沒有開放讀取 presence 節點，請到 Firebase Console → Realtime Database → 規則，確認設定為：{"rules":{"presence":{".read":"auth != null",".write":"auth != null"}}}');
-        }
+
+        var now = serverNow();
+        var liveCount = 0;
+        var staleRefs = [];
+
+        snap.forEach(function(child){
+          var v = child.val() || {};
+          var t = typeof v.t === 'number' ? v.t : 0;
+          if(t && (now - t) < STALE_MS){
+            liveCount++;
+          } else {
+            // 超過門檻沒有心跳，視為幽靈連線（例如瀏覽器被強制關閉、斷網未觸發 onDisconnect）
+            staleRefs.push(child.ref);
+          }
+        });
+
+        // 任何一個在線的分頁都會順手清掉過期的幽靈節點，讓資料庫自動維持乾淨
+        // （規則需允許已登入的使用者寫入/刪除 presence 底下的節點，失敗就靜默略過，不影響顯示）
+        staleRefs.forEach(function(ref){ ref.remove().catch(function(){}); });
+
+        console.log('[線上人數] presence 共 ' + snap.numChildren() + ' 筆，其中有效 ' + liveCount + ' 筆，清除幽靈節點 ' + staleRefs.length + ' 筆');
+
         bar.classList.remove('hidden');
-        text.innerHTML = '目前有 <strong>' + Math.max(count, 1) + '</strong> 人正在貝拉神秘魔法屋占卜';
+        text.innerHTML = '目前有 <strong>' + Math.max(liveCount, 1) + '</strong> 人正在貝拉神秘魔法屋占卜';
       }, function(err){
         clearTimeout(watchdog);
         fail('讀取 presence 失敗（' + err.code + '）。請把 Realtime Database 規則改成允許讀寫 presence 節點：{"rules":{"presence":{".read":"auth != null",".write":"auth != null"}}}');
